@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국내 여행지 추천</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+    <!-- Step 1: 지역 + 날짜 -->
+    <section id="step-1" class="step active">
+        <div class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">✈️ AI 여행 추천</div>
+                <h1>어디로 떠나볼까요?</h1>
+                <p class="hero-sub">
+                    날짜와 여행지를 선택하고 5가지 취향 질문에 답하면<br>
+                    딱 맞는 국내 여행지를 추천해드려요
+                </p>
+                <div class="input-card">
+                    <div class="input-group">
+                        <label for="region-select">📍 여행지 (시/도)</label>
+                        <select id="region-select">
+                            <option value="">지역을 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="date-input">📅 여행 날짜</label>
+                        <input type="date" id="date-input">
+                    </div>
+                    <button class="btn-primary" onclick="handleStep1()">
+                        추천 시작하기 →
+                    </button>
+                </div>
+                <p class="hero-note">※ 날씨 예보는 오늘부터 3일 이내만 제공됩니다</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 2-6: 취향 질문 -->
+    <section id="step-questions" class="step">
+        <div class="question-container">
+            <div class="progress-bar">
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text">1 / 5</span>
+            </div>
+            <div class="question-content">
+                <div class="question-number" id="q-number">Q1</div>
+                <h2 class="question-text" id="q-text"></h2>
+                <div class="options-grid" id="q-options"></div>
+            </div>
+            <button class="btn-back" id="back-btn" onclick="goBack()">← 이전으로</button>
+        </div>
+    </section>
+
+    <!-- 로딩 -->
+    <section id="step-loading" class="step">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <h2>여행지를 찾고 있어요...</h2>
+            <p>날씨와 관광 정보를 분석 중입니다</p>
+        </div>
+    </section>
+
+    <!-- Step 7: 결과 -->
+    <section id="step-results" class="step">
+        <div class="results-container">
+            <div class="results-header">
+                <button class="btn-restart" onclick="restart()">↩ 다시 시작</button>
+                <div>
+                    <h2 class="results-title"><span id="result-region"></span> 여행 추천</h2>
+                    <p class="results-date" id="result-date"></p>
+                </div>
+            </div>
+
+            <div id="weather-card" class="weather-card"></div>
+
+            <h3 class="section-title">🗺️ 추천 여행지</h3>
+            <div class="places-grid" id="places-grid"></div>
+        </div>
+    </section>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 상세정보 모달 -->
+<div id="detail-modal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-card">
+        <button class="modal-close" onclick="closeDetailModal()">✕</button>
+        <div id="modal-body" class="modal-body">
+            <div class="loading-container" style="min-height:300px">
+                <div class="loading-spinner"></div>
+                <p>불러오는 중...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
