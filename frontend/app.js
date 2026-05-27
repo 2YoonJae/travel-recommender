@@ -66,6 +66,15 @@ const state = {
 };
 
 // ─── Init ───────────────────────────────────────────────────────────
+function getLocalDateString(offsetDays = 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const select = document.getElementById("region-select");
     REGIONS.forEach(r => {
@@ -75,8 +84,19 @@ document.addEventListener("DOMContentLoaded", () => {
         select.appendChild(opt);
     });
 
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("date-input").min = today;
+    const dateInput = document.getElementById("date-input");
+    const dateError = document.getElementById("date-error");
+    dateInput.min = getLocalDateString(0);
+
+    dateInput.addEventListener("change", () => {
+        if (dateInput.value && dateInput.value > getLocalDateString(14)) {
+            dateError.style.display = "block";
+            dateInput.style.borderColor = "#EF4444";
+        } else {
+            dateError.style.display = "none";
+            dateInput.style.borderColor = "";
+        }
+    });
 });
 
 // ─── Navigation ─────────────────────────────────────────────────────
@@ -93,6 +113,18 @@ async function handleStep1() {
 
     if (!region) return showToast("여행지를 선택해주세요.");
     if (!dateVal) return showToast("날짜를 선택해주세요.");
+
+    const maxDate = getLocalDateString(14);
+    if (dateVal > maxDate) {
+        const dateError = document.getElementById("date-error");
+        const dateInput = document.getElementById("date-input");
+        dateError.style.display = "block";
+        dateInput.style.borderColor = "#EF4444";
+        dateInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+    }
+    document.getElementById("date-error").style.display = "none";
+    document.getElementById("date-input").style.borderColor = "";
 
     state.region = region;
     state.date = dateVal.replace(/-/g, "");

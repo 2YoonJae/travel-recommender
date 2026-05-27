@@ -4,9 +4,7 @@ from pydantic import BaseModel
 from typing import List
 import httpx
 import os
-import json
 import logging
-import google.generativeai as genai
 from datetime import datetime, timedelta
 from urllib.parse import unquote
 
@@ -23,7 +21,6 @@ app.add_middleware(
 
 WEATHER_API_KEY = unquote(os.getenv("WEATHER_API_KEY", ""))
 TOUR_API_KEY = unquote(os.getenv("TOUR_API_KEY", ""))
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 REGION_COORDS = {
     "서울": (60, 127), "인천": (55, 124), "대전": (67, 100),
@@ -129,87 +126,6 @@ def map_answers_to_content_types(answers: List[str]) -> List[int]:
     return list(dict.fromkeys(types))[:3]
 
 
-ANSWER_LABELS = {
-    "mountain": "산·숲·계곡", "sea": "바다·해변", "city": "도심·거리·핫플", "heritage": "고궁·사찰·유적지",
-    "activity": "액티비티·스포츠", "food": "미식·맛집 탐방", "culture": "문화·예술 감상", "healing": "휴양·힐링",
-    "solo": "혼자", "couple": "연인", "family": "가족(아이 포함)", "friends": "친구·단체",
-    "sns": "인증샷·SNS 핫플", "nature_q": "자연·경관 감상", "experience": "체험·참여 활동", "history": "역사·교육",
-    "under30k": "3만원 이하", "30to70k": "3~7만원", "70to150k": "7~15만원", "over150k": "15만원 이상",
-}
-
-Q_LABELS = ["여행 분위기", "하고 싶은 것", "동행", "중요하게 생각하는 것", "하루 예산(숙박 제외)"]
-
-
-async def refine_with_claude(places: list, answers: List[str], region: str) -> list:
-    if not GEMINI_API_KEY or not places:
-        return places
-
-    profile_lines = []
-    for i, ans in enumerate(answers):
-        label = Q_LABELS[i] if i < len(Q_LABELS) else f"Q{i+1}"
-        val = ANSWER_LABELS.get(ans, ans)
-        profile_lines.append(f"- {label}: {val}")
-    profile = "\n".join(profile_lines)
-
-    places_json = json.dumps(
-        [{"index": i, "title": p["title"], "address": p["address"], "content_type": p["content_type"]} for i, p in enumerate(places)],
-        ensure_ascii=False
-    )
-
-    prompt = f"""당신은 국내 여행 전문가입니다. 아래 여행자 프로필과 후보 여행지 목록을 보고, 이 여행자에게 가장 잘 맞는 여행지 최대 9곳을 선별해 주세요.
-
-## 여행자 프로필
-지역: {region}
-{profile}
-
-## 후보 여행지 (JSON)
-{places_json}
-
-## 출력 형식 (JSON 배열만, 다른 텍스트 없이)
-[
-  {{"index": 숫자, "reason": "이 여행자에게 맞는 이유 (한국어, 2문장 이내)"}},
-  ...
-]
-
-중요: JSON 배열만 출력하세요. 마크다운 코드블록(```)이나 설명 텍스트를 포함하지 마세요."""
-
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = await model.generate_content_async(prompt)
-        raw = response.text.strip()
-
-        # Gemini가 ```json ... ``` 블록으로 감쌀 때 벗겨냄
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-            raw = raw.strip()
-
-        ranked = json.loads(raw)
-
-        result = []
-        seen_indices = set()
-        for item in ranked:
-            idx = item.get("index")
-            if idx is None or idx in seen_indices or idx >= len(places):
-                continue
-            seen_indices.add(idx)
-            place = dict(places[idx])
-            place["reason"] = item.get("reason", "")
-            result.append(place)
-
-        for i, p in enumerate(places):
-            if i not in seen_indices and len(result) < 9:
-                place = dict(p)
-                place["reason"] = ""
-                result.append(place)
-
-        return result[:9]
-
-    except Exception as e:
-        logging.error("Gemini API error: %s", e)
-        return places
 
 
 class RecommendRequest(BaseModel):
@@ -413,13 +329,11 @@ async def get_recommendations(req: RecommendRequest):
             seen.add(p["title"])
             unique.append(p)
 
-    refined = await refine_with_claude(unique, req.answers, req.region)
-
     return {
         "region": req.region,
         "date": req.date,
-        "places": refined,
-        "total": len(refined),
+        "places": unique[:9],
+        "total": len(unique[:9]),
     }
 
 

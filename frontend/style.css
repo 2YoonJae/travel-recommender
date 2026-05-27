@@ -272,17 +272,24 @@ body {
 
 .btn-back {
     margin-top: 36px;
-    background: transparent;
-    border: none;
-    color: #64748B;
-    font-size: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    color: #CBD5E1;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
-    padding: 10px 20px;
-    border-radius: 8px;
-    transition: color 0.2s;
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+    letter-spacing: 0.2px;
 }
 
-.btn-back:hover { color: #fff; }
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateX(-3px);
+}
 
 /* ─── Loading ─── */
 .loading-container {
