@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dateInput.min = getLocalDateString(0);
 
     dateInput.addEventListener("change", () => {
-        if (dateInput.value && dateInput.value > getLocalDateString(14)) {
+        if (dateInput.value && dateInput.value > getLocalDateString(10)) {
             dateError.style.display = "block";
             dateInput.style.borderColor = "#EF4444";
         } else {
@@ -114,7 +114,7 @@ async function handleStep1() {
     if (!region) return showToast("여행지를 선택해주세요.");
     if (!dateVal) return showToast("날짜를 선택해주세요.");
 
-    const maxDate = getLocalDateString(14);
+    const maxDate = getLocalDateString(10);
     if (dateVal > maxDate) {
         const dateError = document.getElementById("date-error");
         const dateInput = document.getElementById("date-input");
@@ -132,13 +132,13 @@ async function handleStep1() {
     state.questionIndex = 0;
     state.weather = null;
 
-    fetchWeather(state.region, state.date);
+    fetchWeather(state.region);
     showQuestion(0);
 }
 
-async function fetchWeather(region, date) {
+async function fetchWeather(region) {
     try {
-        const resp = await fetch(`/api/weather?region=${encodeURIComponent(region)}&date=${date}`);
+        const resp = await fetch(`/api/weather?region=${encodeURIComponent(region)}`);
         if (resp.ok) {
             state.weather = await resp.json();
         }
@@ -226,33 +226,31 @@ async function loadResults() {
 function renderResults(weather, places) {
     document.getElementById("result-region").textContent = state.region;
 
-    const y = state.date.slice(0, 4);
-    const m = state.date.slice(4, 6);
-    const d = state.date.slice(6, 8);
-    const dateObj = new Date(`${y}-${m}-${d}`);
-    document.getElementById("result-date").textContent =
-        dateObj.toLocaleDateString("ko-KR", {
-            year: "numeric", month: "long", day: "numeric", weekday: "short"
-        }) + " 기준";
-
     // Weather
     const weatherEl = document.getElementById("weather-card");
-    if (weather && weather.temperature) {
+    if (weather && weather.days && weather.days.length) {
         weatherEl.innerHTML = `
-            <div class="weather-icon-big">${weather.icon}</div>
-            <div class="weather-info">
-                <h3>${weather.region} · ${weather.weather}</h3>
-                <div class="weather-temp">${weather.temperature}°C</div>
-                <div class="weather-details">
-                    <div class="weather-detail">💧 습도 <span>${weather.humidity}%</span></div>
-                    <div class="weather-detail">☔ 강수확률 <span>${weather.pop}%</span></div>
-                </div>
+            <div class="weather-header">${weather.region} 날씨</div>
+            <div class="weather-days">
+                ${weather.days.map(day => `
+                    <div class="weather-day">
+                        <div class="weather-day-label">${day.label}</div>
+                        <div class="weather-day-icon">${day.icon}</div>
+                        <div class="weather-day-name">${day.weather}</div>
+                        <div class="weather-day-temp">
+                            <span class="temp-max">${day.temp_max}°</span>
+                            <span class="temp-divider">/</span>
+                            <span class="temp-min">${day.temp_min}°</span>
+                        </div>
+                        <div class="weather-day-pop">☔ ${day.pop}%</div>
+                    </div>
+                `).join("")}
             </div>
         `;
     } else {
         weatherEl.innerHTML = `
             <div class="weather-unavailable">
-                ⚠️ 날씨 정보를 불러올 수 없습니다 (단기예보는 오늘부터 3일 이내만 제공)
+                ⚠️ 날씨 정보를 불러올 수 없습니다
             </div>
         `;
     }

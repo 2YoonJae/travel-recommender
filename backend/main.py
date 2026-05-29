@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
+import asyncio
 import httpx
 import os
 import logging
@@ -46,6 +47,34 @@ CONTENT_TYPE_NAMES = {
 SKY_MAP = {1: ("맑음", "☀️"), 3: ("구름많음", "⛅"), 4: ("흐림", "☁️")}
 PTY_MAP = {0: ("없음", ""), 1: ("비", "🌧️"), 2: ("비/눈", "🌨️"), 3: ("눈", "❄️"), 4: ("소나기", "🌦️")}
 
+MID_WEATHER_ICONS = {
+    "맑음": "☀️", "구름많음": "⛅", "구름많고 비": "🌦️",
+    "구름많고 눈": "🌨️", "구름많고 비/눈": "🌨️", "흐림": "☁️",
+    "흐리고 비": "🌧️", "흐리고 눈": "❄️", "흐리고 비/눈": "🌨️",
+    "흐리고 눈/비": "🌨️",
+}
+
+MID_LAND_CODES = {
+    "서울": "11B00000", "인천": "11B00000", "경기도": "11B00000",
+    "강원도": "11D10000",
+    "충청북도": "11C10000",
+    "충청남도": "11C20000", "대전": "11C20000", "세종": "11C20000",
+    "전라북도": "11F10000",
+    "전라남도": "11F20000", "광주": "11F20000",
+    "경상북도": "11H10000", "대구": "11H10000",
+    "경상남도": "11H20000", "부산": "11H20000", "울산": "11H20000",
+    "제주도": "11G00000",
+}
+
+MID_TA_CODES = {
+    "서울": "11B10101", "인천": "11B20201", "대전": "11C20401",
+    "대구": "11H10701", "광주": "11F20501", "부산": "11H20201",
+    "울산": "11H20101", "세종": "11C20404", "경기도": "11B20601",
+    "강원도": "11D10301", "충청북도": "11C10301", "충청남도": "11C20101",
+    "경상북도": "11H10201", "경상남도": "11H20301",
+    "전라북도": "11F10201", "전라남도": "11F20401", "제주도": "11G00201",
+}
+
 
 def get_forecast_base():
     now = datetime.now()
@@ -58,6 +87,20 @@ def get_forecast_base():
         yesterday = now - timedelta(days=1)
         return yesterday.strftime("%Y%m%d"), "2300"
     return now.strftime("%Y%m%d"), f"{base_hour:02d}00"
+
+
+def get_kst_now():
+    return datetime.utcnow() + timedelta(hours=9)
+
+
+def get_mid_forecast_base():
+    now = get_kst_now()
+    if now.hour >= 18:
+        return now.strftime("%Y%m%d") + "1800"
+    elif now.hour >= 6:
+        return now.strftime("%Y%m%d") + "0600"
+    else:
+        return (now - timedelta(days=1)).strftime("%Y%m%d") + "1800"
 
 
 def map_answers_to_content_types(answers: List[str]) -> List[int]:
@@ -178,87 +221,196 @@ async def get_regions():
     return {"regions": list(REGION_COORDS.keys())}
 
 
+@app.get("/api/debug/midweather")
+async def debug_mid_weather(region: str = Query("서울")):
+    tmFc = get_mid_forecast_base()
+    land_code = MID_LAND_CODES.get(region, "11B00000")
+    ta_code = MID_TA_CODES.get(region, "11B10101")
+    async with httpx.AsyncClient() as client:
+        lr, tr = await asyncio.gather(
+            client.get(
+                "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst",
+                params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
+                        "dataType": "JSON", "regId": land_code, "tmFc": tmFc},
+                timeout=15
+            ),
+            client.get(
+                "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa",
+                params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
+                        "dataType": "JSON", "regId": ta_code, "tmFc": tmFc},
+                timeout=15
+            ),
+        )
+    def safe_json(r):
+        try:
+            return r.json()
+        except Exception:
+            return r.text[:2000]
+
+    return {
+        "tmFc": tmFc,
+        "land_code": land_code,
+        "ta_code": ta_code,
+        "land_url": str(lr.url),
+        "land_status": lr.status_code,
+        "ta_status": tr.status_code,
+        "land_response": safe_json(lr),
+        "ta_response": safe_json(tr),
+    }
+
+
 @app.get("/api/weather")
-async def get_weather(region: str = Query(...), date: str = Query(...)):
+async def get_weather(region: str = Query(...)):
     if region not in REGION_COORDS:
         raise HTTPException(400, f"지원하지 않는 지역: {region}")
 
-    try:
-        target_date = datetime.strptime(date, "%Y%m%d")
-    except ValueError:
-        raise HTTPException(400, "날짜 형식 오류 (YYYYMMDD)")
+    today = get_kst_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    short_dates = [(today + timedelta(days=i)).strftime("%Y%m%d") for i in range(4)]
 
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    diff = (target_date - today).days
-
-    if diff < 0:
-        raise HTTPException(400, "과거 날짜는 조회할 수 없습니다.")
-    if diff > 3:
-        raise HTTPException(400, "단기예보는 오늘부터 3일 이내만 가능합니다.")
-
+    # ── 단기예보 (오늘~모레) ──────────────────────────────────────────
     nx, ny = REGION_COORDS[region]
     base_date, base_time = get_forecast_base()
 
-    params = {
+    short_params = {
         "serviceKey": WEATHER_API_KEY,
-        "pageNo": 1,
-        "numOfRows": 1000,
-        "dataType": "JSON",
-        "base_date": base_date,
-        "base_time": base_time,
-        "nx": nx,
-        "ny": ny,
+        "pageNo": 1, "numOfRows": 1000, "dataType": "JSON",
+        "base_date": base_date, "base_time": base_time,
+        "nx": nx, "ny": ny,
     }
 
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(
                 "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst",
-                params=params, timeout=15
+                params=short_params, timeout=15
             )
-            data = resp.json()
+            short_data = resp.json()
         except Exception as e:
-            raise HTTPException(503, f"날씨 API 오류: {str(e)}")
+            raise HTTPException(503, f"단기예보 API 오류: {str(e)}")
 
-    result_code = data.get("response", {}).get("header", {}).get("resultCode", "")
-    if result_code != "00":
-        msg = data.get("response", {}).get("header", {}).get("resultMsg", "API 오류")
-        raise HTTPException(502, f"날씨 API: {msg}")
+    rc = short_data.get("response", {}).get("header", {}).get("resultCode", "")
+    if rc != "00":
+        msg = short_data.get("response", {}).get("header", {}).get("resultMsg", "API 오류")
+        raise HTTPException(502, f"단기예보 API: {msg}")
 
-    items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-    target_str = target_date.strftime("%Y%m%d")
+    short_items = short_data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
+    by_date = {d: {"times": {}, "tmx": None, "tmn": None} for d in short_dates}
 
-    weather_by_time = {}
-    for item in items:
-        if item.get("fcstDate") == target_str:
-            cat = item.get("category")
-            t = item.get("fcstTime")
-            if cat in ("SKY", "PTY", "TMP", "REH", "POP"):
-                if t not in weather_by_time:
-                    weather_by_time[t] = {}
-                weather_by_time[t][cat] = item.get("fcstValue")
+    for item in short_items:
+        fd = item.get("fcstDate")
+        if fd not in by_date:
+            continue
+        cat, t, val = item.get("category"), item.get("fcstTime"), item.get("fcstValue")
+        if cat == "TMX":
+            by_date[fd]["tmx"] = val
+        elif cat == "TMN":
+            by_date[fd]["tmn"] = val
+        elif cat in ("SKY", "PTY", "TMP", "POP"):
+            by_date[fd]["times"].setdefault(t, {})[cat] = val
 
-    weather_data = weather_by_time.get("1200") or (
-        list(weather_by_time.values())[0] if weather_by_time else {}
-    )
+    short_day_labels = ["오늘", "내일", "모레",
+                        f"{(today + timedelta(days=3)).month}/{(today + timedelta(days=3)).day}"]
+    days = []
+    for i, d in enumerate(short_dates):
+        entry = by_date[d]
+        times = entry["times"]
+        noon = times.get("1200") or (list(times.values())[0] if times else {})
+        sky_val = int(noon.get("SKY", 1))
+        pty_val = int(noon.get("PTY", 0))
+        sky_desc, sky_icon = SKY_MAP.get(sky_val, ("맑음", "☀️"))
+        pty_desc, pty_icon = PTY_MAP.get(pty_val, ("없음", ""))
+        tmp_vals = [float(v["TMP"]) for v in times.values() if v.get("TMP")]
+        tmx = entry["tmx"] if entry["tmx"] is not None else (str(int(max(tmp_vals))) if tmp_vals else "N/A")
+        tmn = entry["tmn"] if entry["tmn"] is not None else (str(int(min(tmp_vals))) if tmp_vals else "N/A")
+        pop_vals = [int(v["POP"]) for v in times.values() if v.get("POP")]
+        days.append({
+            "label": short_day_labels[i],
+            "date": d,
+            "icon": pty_icon if pty_val > 0 else sky_icon,
+            "weather": pty_desc if pty_val > 0 else sky_desc,
+            "temp_max": tmx,
+            "temp_min": tmn,
+            "pop": max(pop_vals) if pop_vals else 0,
+        })
 
-    if not weather_data:
-        raise HTTPException(404, "해당 날짜의 예보 데이터가 없습니다.")
+    # ── 중기예보 (D+3 ~ D+9) ─────────────────────────────────────────
+    tmFc = get_mid_forecast_base()
+    land_code = MID_LAND_CODES.get(region)
+    ta_code = MID_TA_CODES.get(region)
 
-    sky_val = int(weather_data.get("SKY", 1))
-    pty_val = int(weather_data.get("PTY", 0))
-    sky_desc, sky_icon = SKY_MAP.get(sky_val, ("알 수 없음", "🌤️"))
-    pty_desc, pty_icon = PTY_MAP.get(pty_val, ("없음", ""))
+    def extract_mid_item(data: dict):
+        rc = data.get("response", {}).get("header", {}).get("resultCode", "")
+        msg = data.get("response", {}).get("header", {}).get("resultMsg", "")
+        logging.info("중기예보 resultCode=%s msg=%s", rc, msg)
+        item = data.get("response", {}).get("body", {}).get("items", {}).get("item")
+        if isinstance(item, list):
+            return item[0] if item else None
+        if isinstance(item, dict):
+            return item
+        return None
 
-    return {
-        "region": region,
-        "date": date,
-        "icon": pty_icon if pty_val > 0 else sky_icon,
-        "weather": pty_desc if pty_val > 0 else sky_desc,
-        "temperature": weather_data.get("TMP", "N/A"),
-        "humidity": weather_data.get("REH", "N/A"),
-        "pop": weather_data.get("POP", "N/A"),
-    }
+    mid_land, mid_ta = None, None
+    if land_code and ta_code:
+        async with httpx.AsyncClient() as mid_client:
+            try:
+                lr, tr = await asyncio.gather(
+                    mid_client.get(
+                        "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst",
+                        params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
+                                "dataType": "JSON", "regId": land_code, "tmFc": tmFc},
+                        timeout=15
+                    ),
+                    mid_client.get(
+                        "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa",
+                        params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
+                                "dataType": "JSON", "regId": ta_code, "tmFc": tmFc},
+                        timeout=15
+                    ),
+                )
+                land_data, ta_data = lr.json(), tr.json()
+                logging.info("중기육상 raw=%s", str(land_data)[:300])
+                logging.info("중기기온 raw=%s", str(ta_data)[:300])
+                mid_land = extract_mid_item(land_data)
+                mid_ta = extract_mid_item(ta_data)
+                logging.info("mid_land keys=%s", list(mid_land.keys())[:8] if mid_land else None)
+                logging.info("mid_ta keys=%s", list(mid_ta.keys())[:8] if mid_ta else None)
+            except Exception as e:
+                logging.error("중기예보 API 예외: %s", e)
+
+    # tmFc 기준일 계산 (YYYYMMDD0600 or YYYYMMDD1800)
+    tmFc_date = datetime.strptime(tmFc[:8], "%Y%m%d").replace(hour=0, minute=0, second=0, microsecond=0)
+
+    for offset in range(4, 10):
+        _d = today + timedelta(days=offset)
+        d = _d.strftime("%Y%m%d")
+        label = f"{_d.month}/{_d.day}"
+        # tmFc 기준일로부터 며칠 뒤인지 계산
+        m = ((_d - tmFc_date).days)
+
+        if mid_land and mid_ta and 3 <= m <= 10:
+            wf_am = mid_land.get(f"wf{m}Am", "") or mid_land.get(f"wf{m}", "")
+            wf_pm = mid_land.get(f"wf{m}Pm", "") or wf_am
+            wf = wf_pm or wf_am or "맑음"
+            icon = MID_WEATHER_ICONS.get(wf, "🌤️")
+            pop_am = int(mid_land.get(f"rnSt{m}Am", 0) or 0)
+            pop_pm = int(mid_land.get(f"rnSt{m}Pm", 0) or mid_land.get(f"rnSt{m}", 0) or 0)
+            pop = max(pop_am, pop_pm)
+            tmx = str(mid_ta.get(f"taMax{m}", "N/A"))
+            tmn = str(mid_ta.get(f"taMin{m}", "N/A"))
+        else:
+            wf, icon, pop, tmx, tmn = "-", "🌤️", 0, "-", "-"
+
+        days.append({
+            "label": label,
+            "date": d,
+            "icon": icon,
+            "weather": wf,
+            "temp_max": tmx,
+            "temp_min": tmn,
+            "pop": pop,
+        })
+
+    return {"region": region, "days": days}
 
 
 @app.post("/api/recommend")
