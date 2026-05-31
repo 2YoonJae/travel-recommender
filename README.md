@@ -7,8 +7,7 @@
 ## 주요 기능
 
 - **날씨 예보** — 기상청 단기예보 API를 통해 여행 날짜의 날씨(기온, 습도, 강수확률) 제공
-- **취향 기반 추천** — 여행 분위기, 하고 싶은 것, 동행, 관심사, 예산 등 5가지 질문으로 맞춤 여행지 추천
-- **AI 개인화** — Google Gemini AI가 후보 여행지를 분석해 가장 잘 맞는 곳을 선별하고 추천 이유를 한국어로 생성
+- **취향 기반 추천** — 여행 분위기, 하고 싶은 것 등 취향 질문으로 맞춤 여행지 추천
 - **상세정보 조회** — 카드 클릭 시 모달로 여행지 소개, 이미지, 주소, 홈페이지, 네이버 지도 링크 제공
 
 ---
@@ -18,11 +17,10 @@
 ```
 지역 + 날짜 선택
        ↓
-5가지 취향 질문 응답
+취향 질문 응답
        ↓
 기상청 API → 날씨 정보 조회
 한국관광공사 API → 후보 여행지 수집
-Gemini AI → 프로필 분석 후 맞춤 선별 + 추천 이유 생성
        ↓
 결과 페이지: 날씨 카드 + 추천 여행지 카드
        ↓
@@ -37,7 +35,6 @@ Gemini AI → 프로필 분석 후 맞춤 선별 + 추천 이유 생성
 |------|------|
 | Frontend | HTML / CSS / Vanilla JS |
 | Backend | Python FastAPI |
-| AI | Google Gemini API (`gemini-1.5-flash`) |
 | 외부 API | 기상청 단기예보 API, 한국관광공사 KorService2 API |
 | 인프라 | Docker, Docker Compose, Nginx |
 
@@ -49,9 +46,6 @@ Gemini AI → 프로필 분석 후 맞춤 선별 + 추천 이유 생성
 |-----|--------|------|
 | 기상청 단기예보 | [공공데이터포털](https://www.data.go.kr) | 무료 |
 | 한국관광공사 국문 관광정보 서비스 | [공공데이터포털](https://www.data.go.kr) | 무료 |
-| Google Gemini | [Google AI Studio](https://aistudio.google.com) | 무료 (월 한도 내) |
-
-> Gemini API 키가 없어도 서비스는 정상 동작합니다. 다만 AI 추천 이유는 표시되지 않습니다.
 
 ---
 
@@ -75,7 +69,6 @@ cp .env.example .env
 ```
 WEATHER_API_KEY=기상청_API_키
 TOUR_API_KEY=한국관광공사_API_키
-GEMINI_API_KEY=Gemini_API_키
 ```
 
 > 공공데이터포털에서 발급받은 **URL 인코딩된 키**를 그대로 붙여넣으세요.
@@ -95,7 +88,7 @@ docker-compose up --build
 ```
 travel-recommender/
 ├── backend/
-│   ├── main.py          # FastAPI 서버 (날씨, 관광, AI 추천 API)
+│   ├── main.py          # FastAPI 서버 (날씨, 관광 추천 API)
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
