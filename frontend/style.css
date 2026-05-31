@@ -131,6 +131,32 @@ body {
 
 .btn-primary:active { transform: translateY(0); }
 
+.btn-weather-page {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(129, 140, 248, 0.5);
+    border-radius: var(--radius-sm);
+    color: #C7D2FE;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-weather-page:hover {
+    background: rgba(129, 140, 248, 0.18);
+    border-color: #818CF8;
+    color: #fff;
+}
+
+/* 결과 헤더 안에서는 우측 정렬 + 상단 여백 제거 */
+.results-header .btn-weather-page {
+    margin-top: 0;
+    margin-left: auto;
+}
+
 .hero-note {
     margin-top: 16px;
     font-size: 12px;
@@ -249,6 +275,14 @@ body {
     line-height: 1.5;
 }
 
+.options-grid.three {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.options-grid.three .option-card {
+    padding: 28px 16px;
+}
+
 .options-grid.four {
     grid-template-columns: 1fr 1fr;
 }
@@ -363,7 +397,7 @@ body {
 .weather-card {
     background: linear-gradient(135deg, #1E3A8A 0%, #0369A1 100%);
     border-radius: var(--radius);
-    padding: 28px 32px;
+    padding: 18px 24px;
     color: #fff;
     margin-bottom: 48px;
     box-shadow: 0 16px 48px rgba(3, 105, 161, 0.35);
@@ -373,14 +407,14 @@ body {
     font-size: 14px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.65);
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     letter-spacing: 0.4px;
 }
 
 .weather-days {
     display: flex;
+    align-items: stretch;
     gap: 0;
-    overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -388,34 +422,59 @@ body {
 .weather-days::-webkit-scrollbar { display: none; }
 
 .weather-day {
-    flex: 0 0 auto;
-    min-width: 80px;
+    flex: 1 1 0;
+    min-width: 0;
     text-align: center;
-    padding: 0 12px;
+    padding: 6px 6px;
     border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .weather-day:last-child { border-right: none; }
 
+/* 오늘 — 다른 날보다 강조 */
+.weather-day.today {
+    flex: 1.3 1 0;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    border-right: none;
+}
+
+.weather-day.today + .weather-day { border-left: 1px solid rgba(255, 255, 255, 0.12); }
+
+.weather-day.today .weather-day-label { color: #FDE68A; }
+.weather-day.today .weather-day-icon { font-size: 40px; }
+.weather-day.today .weather-day-name { font-size: 14px; }
+.weather-day.today .temp-max,
+.weather-day.today .temp-min { font-size: 22px; }
+
+/* 현재 온도 (오늘만) */
+.weather-day-current {
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
 .weather-day-label {
     font-size: 12px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.55);
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.8px;
 }
 
 .weather-day-icon {
-    font-size: 36px;
+    font-size: 32px;
     line-height: 1;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .weather-day-name {
     font-size: 13px;
     color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .weather-day-temp {
@@ -423,7 +482,7 @@ body {
     align-items: baseline;
     justify-content: center;
     gap: 4px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .temp-max {
@@ -457,9 +516,16 @@ body {
 }
 
 @media (max-width: 600px) {
-    .weather-day { padding: 0 8px; }
-    .weather-day-icon { font-size: 28px; }
-    .temp-max, .temp-min { font-size: 16px; }
+    .weather-day { padding: 6px 3px; }
+    .weather-day-icon { font-size: 24px; }
+    .temp-max, .temp-min { font-size: 13px; }
+    .weather-day-label { font-size: 10px; letter-spacing: 0.3px; }
+    .weather-day-name { font-size: 11px; }
+    .weather-day-pop { font-size: 10px; }
+    .weather-day.today .weather-day-icon { font-size: 32px; }
+    .weather-day.today .temp-max,
+    .weather-day.today .temp-min { font-size: 16px; }
+    .weather-day-current { font-size: 22px; }
 }
 
 /* ─── Section Title ─── */
@@ -737,7 +803,9 @@ body {
 
 /* ─── Responsive ─── */
 @media (max-width: 600px) {
-    .options-grid { grid-template-columns: 1fr; }
+    .options-grid,
+    .options-grid.three,
+    .options-grid.four { grid-template-columns: 1fr; }
     .option-card { padding: 28px 20px; }
     .option-icon { font-size: 42px; }
     .weather-card { padding: 24px 20px; }

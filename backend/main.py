@@ -6,8 +6,10 @@ import asyncio
 import httpx
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import unquote
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 logging.basicConfig(level=logging.INFO)
 
@@ -106,15 +108,9 @@ def get_mid_forecast_base():
 def map_answers_to_content_types(answers: List[str]) -> List[int]:
     # Q1: mountain/sea/city/heritage
     # Q2: activity/food/culture/healing
-    # Q3: solo/couple/family/friends
-    # Q4: sns/nature_q/experience/history
-    # Q5: under30k/30to70k/70to150k/over150k
 
-    env     = answers[0] if len(answers) > 0 else "mountain"
-    style   = answers[1] if len(answers) > 1 else "healing"
-    social  = answers[2] if len(answers) > 2 else "solo"
-    interest = answers[3] if len(answers) > 3 else "nature_q"
-    budget  = answers[4] if len(answers) > 4 else "30to70k"
+    env   = answers[0] if len(answers) > 0 else "mountain"
+    style = answers[1] if len(answers) > 1 else "healing"
 
     types = []
 
@@ -136,29 +132,6 @@ def map_answers_to_content_types(answers: List[str]) -> List[int]:
         if 14 not in types:
             types.append(14)
     else:  # healing
-        if 12 not in types:
-            types.append(12)
-
-    # 관심사 기반
-    if interest == "experience":
-        if 28 not in types:
-            types.append(28)
-    elif interest == "history":
-        if 14 not in types:
-            types.append(14)
-    elif interest == "sns":
-        if 12 not in types:
-            types.append(12)
-
-    # 동행 기반
-    if social in ("family", "friends") and 15 not in types:
-        types.append(15)   # 축제/행사
-
-    # 예산 기반 보정
-    if budget == "over150k":
-        if 32 not in types:
-            types.append(32)  # 숙박
-    elif budget == "under30k":
         if 12 not in types:
             types.append(12)
 
@@ -259,11 +232,7 @@ async def debug_mid_weather(region: str = Query("서울")):
     }
 
 
-@app.get("/api/weather")
-async def get_weather(region: str = Query(...)):
-    if region not in REGION_COORDS:
-        raise HTTPException(400, f"지원하지 않는 지역: {region}")
-
+async def fetch_weather_days(region: str):
     today = get_kst_now().replace(hour=0, minute=0, second=0, microsecond=0)
     short_dates = [(today + timedelta(days=i)).strftime("%Y%m%d") for i in range(4)]
 
@@ -323,6 +292,14 @@ async def get_weather(region: str = Query(...)):
         tmx = entry["tmx"] if entry["tmx"] is not None else (str(int(max(tmp_vals))) if tmp_vals else "N/A")
         tmn = entry["tmn"] if entry["tmn"] is not None else (str(int(min(tmp_vals))) if tmp_vals else "N/A")
         pop_vals = [int(v["POP"]) for v in times.values() if v.get("POP")]
+        # 오늘: 현재 시각에 가장 가까운 TMP를 현재 온도로
+        temp_current = None
+        if i == 0 and times:
+            cur_hhmm = int(get_kst_now().strftime("%H00"))
+            for t, v in sorted(times.items(), key=lambda kv: abs(int(kv[0]) - cur_hhmm)):
+                if v.get("TMP"):
+                    temp_current = str(int(float(v["TMP"])))
+                    break
         days.append({
             "label": short_day_labels[i],
             "date": d,
@@ -330,6 +307,7 @@ async def get_weather(region: str = Query(...)):
             "weather": pty_desc if pty_val > 0 else sky_desc,
             "temp_max": tmx,
             "temp_min": tmn,
+            "temp_current": temp_current,
             "pop": max(pop_vals) if pop_vals else 0,
         })
 
@@ -380,7 +358,7 @@ async def get_weather(region: str = Query(...)):
     # tmFc 기준일 계산 (YYYYMMDD0600 or YYYYMMDD1800)
     tmFc_date = datetime.strptime(tmFc[:8], "%Y%m%d").replace(hour=0, minute=0, second=0, microsecond=0)
 
-    for offset in range(4, 10):
+    for offset in range(4, 8):
         _d = today + timedelta(days=offset)
         d = _d.strftime("%Y%m%d")
         label = f"{_d.month}/{_d.day}"
@@ -410,7 +388,235 @@ async def get_weather(region: str = Query(...)):
             "pop": pop,
         })
 
+    return days
+
+
+# ── 날씨 캐시 (cron 사전 캐싱) ────────────────────────────────────────
+# 기상청 단기예보 발표: 02·05·08·11·14·17·20·23시 / 중기예보: 06·18시.
+# cron으로 발표 직후(+15분) 전 지역을 미리 받아 캐시에 저장 → 사용자 요청은
+# 외부 API 대신 캐시를 읽음(트래픽·한도 절감, 응답 속도↑, 외부 장애 내성).
+KST = timezone(timedelta(hours=9))
+WEATHER_CACHE: dict = {}                 # {region: {"days": [...], "ts": datetime}}
+CACHE_TTL = timedelta(hours=6)           # cron 실패 대비 안전망(발표 간격 3h보다 여유)
+
+scheduler = AsyncIOScheduler(timezone=KST)
+
+
+async def get_weather_days(region: str):
+    """캐시 우선 조회. 캐시 없음/만료 시에만 라이브 fetch 후 저장."""
+    entry = WEATHER_CACHE.get(region)
+    if entry and (datetime.now(KST) - entry["ts"]) < CACHE_TTL:
+        return entry["days"]
+    days = await fetch_weather_days(region)
+    WEATHER_CACHE[region] = {"days": days, "ts": datetime.now(KST)}
+    return days
+
+
+async def refresh_weather_cache():
+    """전 지역 날씨를 받아 캐시 갱신. 발표 시각 cron + 부팅 워밍에서 호출."""
+    ok = 0
+    for region in REGION_COORDS:
+        try:
+            days = await fetch_weather_days(region)
+            WEATHER_CACHE[region] = {"days": days, "ts": datetime.now(KST)}
+            ok += 1
+        except Exception as e:
+            logging.error("weather 캐시 갱신 실패 %s: %s", region, e)
+        await asyncio.sleep(0.3)   # 외부 API 순간 부하 분산
+    logging.info("weather 캐시 갱신 완료: %d/%d 지역", ok, len(REGION_COORDS))
+
+
+@app.on_event("startup")
+async def _start_scheduler():
+    # cold start 방지: 부팅 직후 백그라운드로 캐시 1회 채움
+    asyncio.create_task(refresh_weather_cache())
+    # 발표 시각(단기 8회 + 중기 2회)의 합집합 +15분에 전 지역 갱신.
+    # 한 번의 refresh가 단기·중기 모두 fetch하므로 시각만 합쳐 단일 잡으로 처리.
+    scheduler.add_job(
+        refresh_weather_cache,
+        CronTrigger(hour="2,5,6,8,11,14,17,18,20,23", minute=15),
+        id="weather_refresh", replace_existing=True,
+    )
+    scheduler.start()
+    logging.info("weather 캐시 스케줄러 시작 (KST 발표시각 +15분)")
+
+
+@app.on_event("shutdown")
+async def _stop_scheduler():
+    scheduler.shutdown(wait=False)
+
+
+@app.get("/api/debug/cache")
+async def debug_cache():
+    """캐시 적재 현황 (지역별 마지막 갱신 시각·일수)."""
+    return {
+        "cached_regions": len(WEATHER_CACHE),
+        "total_regions": len(REGION_COORDS),
+        "entries": {
+            r: {"days": len(e["days"]), "ts": e["ts"].isoformat()}
+            for r, e in WEATHER_CACHE.items()
+        },
+    }
+
+
+@app.get("/api/weather")
+async def get_weather(region: str = Query(...)):
+    if region not in REGION_COORDS:
+        raise HTTPException(400, f"지원하지 않는 지역: {region}")
+    days = await get_weather_days(region)
     return {"region": region, "days": days}
+
+
+# ── 분위기 + 실제 날씨 조합 ──────────────────────────────────────────
+INDOOR_TYPES = [14, 38, 39]   # 문화시설, 쇼핑, 음식점
+OUTDOOR_TYPES = [12, 28]      # 관광지, 레포츠
+
+MOOD_LABELS = {
+    "rainy": "비 오는 날의 낭만",
+    "sunny": "햇빛 쨍쨍한 맑은 날",
+    "cloudy": "구름 많고 흐린 날",
+}
+WEATHER_LABELS = {"rain": "비/눈", "sunny": "맑음", "cloudy": "흐림"}
+MOOD_TO_CAT = {"rainy": "rain", "sunny": "sunny", "cloudy": "cloudy"}
+
+
+def classify_weather(day: dict) -> str:
+    """예보 1일치를 rain/sunny/cloudy 로 분류."""
+    w = str(day.get("weather", ""))
+    pop = day.get("pop", 0) or 0
+    try:
+        pop = int(pop)
+    except (TypeError, ValueError):
+        pop = 0
+    if any(k in w for k in ("비", "눈", "소나기")) or pop >= 60:
+        return "rain"
+    if "맑" in w:
+        return "sunny"
+    return "cloudy"
+
+
+def build_plan(answers: List[str], weather_cat: str):
+    """env/style 기반 contentType 을 실제 날씨에 맞게 정렬·보강한 목록과
+    실내/야외 선호(prefer) 를 반환."""
+    base = map_answers_to_content_types(answers)
+
+    # 실제 날씨 → 실내/야외 선호
+    if weather_cat == "rain":
+        prefer = "indoor"
+    elif weather_cat == "sunny":
+        prefer = "outdoor"
+    else:
+        prefer = None
+
+    types = list(base)
+    if prefer == "indoor" and not any(t in INDOOR_TYPES for t in types):
+        types.append(14)          # 비 예보 → 실내 대안 보강
+    if prefer == "outdoor" and 12 not in types:
+        types.insert(0, 12)       # 맑음 → 야외 보강
+
+    def sort_key(t):
+        if prefer == "indoor":
+            return 0 if t in INDOOR_TYPES else 1
+        if prefer == "outdoor":
+            return 0 if t in OUTDOOR_TYPES else 1
+        return 0
+
+    types = sorted(dict.fromkeys(types), key=sort_key)[:3]
+    return types, prefer
+
+
+def mood_weather_note(mood: str, days: list, sel_date: str, sel_cat: str):
+    """선택 날짜 날씨가 분위기와 일치하는지 + 불일치 시 일치하는 모든 날짜 수집.
+    반환: (note 문구, match_date 'YYYYMMDD' or None). match_date는 게이트/첫 일치일."""
+    mood_label = MOOD_LABELS.get(mood, "")
+    mood_cat = MOOD_TO_CAT.get(mood)
+
+    if mood_cat == sel_cat:
+        wlabel = WEATHER_LABELS.get(sel_cat, "")
+        return f"선택하신 '{mood_label}' 분위기와 그날 날씨({wlabel})가 일치해요!", sel_date
+
+    # 불일치 → 예보 범위에서 분위기와 맞는 모든 날짜 수집 (날짜순)
+    matches = []  # [(datetime, 'YYYYMMDD'), ...]
+    for d in days:
+        ds = d.get("date", "")
+        w = str(d.get("weather", ""))
+        if not ds or ds == sel_date or w in ("", "-"):
+            continue
+        if classify_weather(d) != mood_cat:
+            continue
+        try:
+            dd = datetime.strptime(ds, "%Y%m%d")
+        except ValueError:
+            continue
+        matches.append((dd, ds))
+
+    if matches:
+        matches.sort(key=lambda x: x[0])
+        date_str = ", ".join(f"{dt.month}월 {dt.day}일" for dt, _ in matches)
+        return (f"선택한 날짜는 '{mood_label}' 분위기와 일치하지 않아요. "
+                f"대신 이런 날이 잘 맞아요 → {date_str}"), matches[0][1]
+
+    return (f"예보 기간(7일) 내에 '{mood_label}' 분위기에 맞는 날씨가 없어요."), None
+
+
+async def fetch_festivals(client, area_code: int, trip_date: str) -> list:
+    """선택한 날짜에 진행 중인 축제/행사를 searchFestival2로 조회."""
+    try:
+        # 진행 중(이미 시작한) 축제도 잡으려 30일 전부터 검색 후 날짜로 필터
+        start = (datetime.strptime(trip_date, "%Y%m%d") - timedelta(days=30)).strftime("%Y%m%d")
+    except ValueError:
+        return []
+
+    params = {
+        "serviceKey": TOUR_API_KEY,
+        "numOfRows": 50,
+        "pageNo": 1,
+        "MobileOS": "ETC",
+        "MobileApp": "TravelApp",
+        "_type": "json",
+        "arrange": "A",
+        "areaCode": area_code,
+        "eventStartDate": start,
+    }
+    try:
+        resp = await client.get(
+            "https://apis.data.go.kr/B551011/KorService2/searchFestival2",
+            params=params, timeout=15
+        )
+        data = resp.json()
+        logging.info("FESTIVAL API status=%s body=%s", resp.status_code, str(data)[:300])
+    except Exception as e:
+        logging.error("FESTIVAL API exception: %s", e)
+        return []
+
+    items = data.get("response", {}).get("body", {}).get("items", {})
+    if not items or not isinstance(items, dict) or not items.get("item"):
+        return []
+
+    item_list = items["item"]
+    if isinstance(item_list, dict):
+        item_list = [item_list]
+
+    festivals = []
+    for item in item_list:
+        s = str(item.get("eventstartdate", ""))
+        e = str(item.get("eventenddate", ""))
+        # 선택 날짜가 행사 기간(시작~종료)에 걸치는 것만
+        if s and e and s <= trip_date <= e:
+            festivals.append({
+                "title": item.get("title", ""),
+                "address": (item.get("addr1", "") + " " + item.get("addr2", "")).strip(),
+                "image": item.get("firstimage", ""),
+                "content_type": CONTENT_TYPE_NAMES.get(15, "축제/행사"),
+                "tel": item.get("tel", ""),
+                "mapx": item.get("mapx", ""),
+                "mapy": item.get("mapy", ""),
+                "contentid": item.get("contentid", ""),
+                "contenttypeid": 15,
+                "eventstartdate": s,
+                "eventenddate": e,
+            })
+    return festivals
 
 
 @app.post("/api/recommend")
@@ -419,10 +625,45 @@ async def get_recommendations(req: RecommendRequest):
         raise HTTPException(400, f"지원하지 않는 지역: {req.region}")
 
     area_code = AREA_CODES[req.region]
-    content_types = map_answers_to_content_types(req.answers)
+
+    # 선택 날짜 날씨 예보 조회 → 분위기와 조합
+    weather_cat = "cloudy"
+    days = []
+    try:
+        days = await get_weather_days(req.region)
+        day = next((d for d in days if d.get("date") == req.date), None)
+        if day:
+            weather_cat = classify_weather(day)
+    except Exception as e:
+        logging.error("recommend 날씨 조회 실패: %s", e)
+
+    content_types, prefer = build_plan(req.answers, weather_cat)
+    mood = req.answers[2] if len(req.answers) > 2 else "cloudy"
+    weather_note, match_date = mood_weather_note(mood, days, req.date, weather_cat)
+    mood_matched = match_date == req.date
+
+    # 7일 예보에 분위기와 맞는 날이 전혀 없으면(=match_date None) 추천 생략.
+    # 단 날씨 조회 실패(days 빈 경우)는 차단하지 않음.
+    mood_available = bool(match_date) or not days
+    if not mood_available:
+        return {
+            "region": req.region,
+            "date": req.date,
+            "weather_category": weather_cat,
+            "weather_note": weather_note,
+            "mood_matched": False,
+            "match_date": None,
+            "mood_available": False,
+            "places": [],
+            "total": 0,
+        }
+
     all_places = []
 
     async with httpx.AsyncClient() as client:
+        # 선택 날짜에 실제 열리는 축제 먼저 (상위 노출, 최대 3개)
+        all_places.extend((await fetch_festivals(client, area_code, req.date))[:3])
+
         for ct_id in content_types:
             params = {
                 "serviceKey": TOUR_API_KEY,
@@ -484,6 +725,11 @@ async def get_recommendations(req: RecommendRequest):
     return {
         "region": req.region,
         "date": req.date,
+        "weather_category": weather_cat,
+        "weather_note": weather_note,
+        "mood_matched": mood_matched,
+        "match_date": match_date,
+        "mood_available": True,
         "places": unique[:9],
         "total": len(unique[:9]),
     }

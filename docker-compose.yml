@@ -1,11 +1,21 @@
-version: "3.8"
-
 services:
   backend:
     build: ./backend
     env_file: .env
     expose:
       - "8000"
+    restart: unless-stopped
+
+  # cron 데몬: 발표 시각마다 전국 날씨 HTML(weather.html)을 생성/갱신
+  cron:
+    build: ./cron
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - OUTPUT_DIR=/output
+    volumes:
+      - ./frontend:/output          # nginx가 서빙하는 폴더에 HTML 기록
+    depends_on:
+      - backend
     restart: unless-stopped
 
   nginx:

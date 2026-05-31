@@ -29,30 +29,11 @@ const QUESTIONS = [
         ]
     },
     {
-        text: "누구와 함께 여행하나요?",
+        text: "원하는 여행 분위기는?",
         options: [
-            { value: "solo",    icon: "🧑",        label: "혼자",          desc: "자유롭게 내 페이스로" },
-            { value: "couple",  icon: "👫",        label: "연인",          desc: "둘만의 로맨틱 여행" },
-            { value: "family",  icon: "👨‍👩‍👧‍👦", label: "가족 (아이 포함)", desc: "온 가족 체험·놀이 중심" },
-            { value: "friends", icon: "👥",        label: "친구·단체",     desc: "왁자지껄 함께 즐기기" }
-        ]
-    },
-    {
-        text: "여행에서 특히 중요하게 생각하는 것은?",
-        options: [
-            { value: "sns",        icon: "📸", label: "인증샷·SNS 핫플", desc: "사진 잘 나오는 명소 위주" },
-            { value: "nature_q",   icon: "🌿", label: "자연·경관 감상",   desc: "조용하고 아름다운 풍경" },
-            { value: "experience", icon: "🎭", label: "체험·참여 활동",   desc: "직접 만들고 배우는 여행" },
-            { value: "history",    icon: "📚", label: "역사·교육",        desc: "배움이 있는 의미 있는 여행" }
-        ]
-    },
-    {
-        text: "하루 여행 예산은? (1인 기준, 숙박 제외)",
-        options: [
-            { value: "under30k",   icon: "💚", label: "3만원 이하",    desc: "무료·저렴한 명소 위주" },
-            { value: "30to70k",    icon: "💛", label: "3만원 ~ 7만원", desc: "식사 + 입장료 포함" },
-            { value: "70to150k",   icon: "🧡", label: "7만원 ~ 15만원", desc: "액티비티·체험 포함" },
-            { value: "over150k",   icon: "❤️", label: "15만원 이상",    desc: "프리미엄 식사·코스 여행" }
+            { value: "rainy",  icon: "🌧️", label: "비 오는 날의 낭만",   desc: "촉촉한 감성, 빗소리, 실내 명소" },
+            { value: "sunny",  icon: "☀️", label: "햇빛 쨍쨍 맑은 날",   desc: "파란 하늘, 야외 활동, 산책" },
+            { value: "cloudy", icon: "☁️", label: "구름 많고 흐린 날",   desc: "선선한 공기, 부담 없는 나들이" }
         ]
     }
 ];
@@ -89,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dateInput.min = getLocalDateString(0);
 
     dateInput.addEventListener("change", () => {
-        if (dateInput.value && dateInput.value > getLocalDateString(10)) {
+        if (dateInput.value && dateInput.value > getLocalDateString(6)) {
             dateError.style.display = "block";
             dateInput.style.borderColor = "#EF4444";
         } else {
@@ -114,7 +95,7 @@ async function handleStep1() {
     if (!region) return showToast("여행지를 선택해주세요.");
     if (!dateVal) return showToast("날짜를 선택해주세요.");
 
-    const maxDate = getLocalDateString(10);
+    const maxDate = getLocalDateString(6);
     if (dateVal > maxDate) {
         const dateError = document.getElementById("date-error");
         const dateInput = document.getElementById("date-input");
@@ -159,7 +140,7 @@ function showQuestion(index) {
     document.getElementById("q-text").textContent = q.text;
 
     const grid = document.getElementById("q-options");
-    grid.className = "options-grid" + (q.options.length === 4 ? " four" : "");
+    grid.className = "options-grid" + (q.options.length === 4 ? " four" : q.options.length === 3 ? " three" : "");
     grid.innerHTML = q.options.map(opt => `
         <div class="option-card" onclick="selectAnswer('${opt.value}')">
             <span class="option-icon">${opt.icon}</span>
@@ -215,7 +196,7 @@ async function loadResults() {
         }
 
         const data = await resp.json();
-        renderResults(state.weather, data.places);
+        renderResults(state.weather, data);
 
     } catch (e) {
         showToast(e.message);
@@ -223,7 +204,10 @@ async function loadResults() {
     }
 }
 
-function renderResults(weather, places) {
+function renderResults(weather, data) {
+    const places = data.places;
+    const note = data.weather_note;
+
     document.getElementById("result-region").textContent = state.region;
 
     // Weather
@@ -232,19 +216,24 @@ function renderResults(weather, places) {
         weatherEl.innerHTML = `
             <div class="weather-header">${weather.region} 날씨</div>
             <div class="weather-days">
-                ${weather.days.map(day => `
-                    <div class="weather-day">
+                ${weather.days.map((day, i) => {
+                    const isToday = i === 0 || day.label === "오늘";
+                    return `
+                    <div class="weather-day${isToday ? " today" : ""}">
                         <div class="weather-day-label">${day.label}</div>
                         <div class="weather-day-icon">${day.icon}</div>
                         <div class="weather-day-name">${day.weather}</div>
+                        ${isToday && day.temp_current != null
+                            ? `<div class="weather-day-current">${day.temp_current}°</div>`
+                            : ""}
                         <div class="weather-day-temp">
                             <span class="temp-max">${day.temp_max}°</span>
                             <span class="temp-divider">/</span>
                             <span class="temp-min">${day.temp_min}°</span>
                         </div>
                         <div class="weather-day-pop">☔ ${day.pop}%</div>
-                    </div>
-                `).join("")}
+                    </div>`;
+                }).join("")}
             </div>
         `;
     } else {
@@ -257,7 +246,32 @@ function renderResults(weather, places) {
 
     // Places
     const placesEl = document.getElementById("places-grid");
-    if (!places || places.length === 0) {
+
+    // 분위기 + 날씨 안내 배너
+    let noteEl = document.getElementById("weather-note");
+    if (note) {
+        if (!noteEl) {
+            noteEl = document.createElement("div");
+            noteEl.id = "weather-note";
+            noteEl.style.cssText = "margin:16px 0;padding:12px 16px;background:#EEF2FF;border-radius:12px;color:#3730A3;font-size:14px;line-height:1.5;";
+            placesEl.parentNode.insertBefore(noteEl, placesEl);
+        }
+        noteEl.textContent = "✨ " + note;
+        noteEl.style.display = "";
+    } else if (noteEl) {
+        noteEl.style.display = "none";
+    }
+
+    if (data.mood_available === false) {
+        placesEl.innerHTML = `
+            <div class="no-results">
+                다른 분위기를 골라보세요. 😢<br>
+                <button onclick="restart()"
+                    style="margin-top:16px;padding:10px 18px;background:#4F46E5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+                    🏠 처음으로 돌아가기</button>
+            </div>
+        `;
+    } else if (!places || places.length === 0) {
         placesEl.innerHTML = `
             <div class="no-results">
                 😢 해당 조건의 여행지를 찾지 못했습니다.<br>
@@ -283,8 +297,8 @@ function renderResults(weather, places) {
                         <span class="place-type">${escHtml(place.content_type)}</span>
                         <div class="place-title">${escHtml(place.title)}</div>
                         ${place.address ? `<div class="place-address">📍 ${escHtml(place.address)}</div>` : ""}
+                        ${place.eventstartdate ? `<div class="place-event">📅 ${fmtEventDate(place.eventstartdate)} ~ ${fmtEventDate(place.eventenddate)}</div>` : ""}
                         ${place.tel ? `<div class="place-tel">📞 ${escHtml(place.tel)}</div>` : ""}
-                        ${place.reason ? `<div class="place-reason">✨ ${escHtml(place.reason)}</div>` : ""}
                     </div>
                 </div>
             `;
@@ -391,6 +405,12 @@ document.addEventListener("keydown", e => {
 });
 
 // ─── Utils ───────────────────────────────────────────────────────────
+function fmtEventDate(s) {
+    s = String(s || "");
+    if (s.length !== 8) return s;
+    return `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6, 8)}`;
+}
+
 function escHtml(str) {
     return String(str)
         .replace(/&/g, "&amp;")

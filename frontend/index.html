@@ -16,7 +16,7 @@
 
                 <h1>어디로 떠나볼까요?</h1>
                 <p class="hero-sub">
-                    날짜와 여행지를 선택하고 5가지 취향 질문에 답하면<br>
+                    날짜와 여행지를 선택하고 3가지 취향 질문에 답하면<br>
                     딱 맞는 국내 여행지를 추천해드려요
                 </p>
                 <div class="input-card">
@@ -30,14 +30,15 @@
                         <label for="date-input">📅 여행 날짜</label>
                         <input type="date" id="date-input">
                         <p id="date-error" style="display:none; color:#EF4444; font-size:13px; margin-top:6px; font-weight:600;">
-                            ⚠️ 10일 이후는 선택할 수 없습니다.
+                            ⚠️ 오늘부터 7일까지만 선택할 수 있습니다.
                         </p>
                     </div>
                     <button class="btn-primary" onclick="handleStep1()">
                         추천 시작하기 →
                     </button>
                 </div>
-                <p class="hero-note">※ 날씨 예보는 오늘부터 3일 이내만 제공됩니다</p>
+                <a class="btn-weather-page" href="/weather.html">🌤️ 전국 날씨 한눈에 보기</a>
+                <p class="hero-note">※ 날씨 예보는 오늘부터 7일 이내만 제공됩니다</p>
             </div>
         </div>
     </section>
@@ -49,7 +50,7 @@
                 <div class="progress-track">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
-                <span class="progress-text" id="progress-text">1 / 5</span>
+                <span class="progress-text" id="progress-text">1 / 3</span>
             </div>
             <div class="question-content">
                 <div class="question-number" id="q-number">Q1</div>
@@ -73,10 +74,10 @@
     <section id="step-results" class="step">
         <div class="results-container">
             <div class="results-header">
-                <button class="btn-restart" onclick="restart()">↩ 다시 시작</button>
                 <div>
                     <h2 class="results-title"><span id="result-region"></span> 여행 추천</h2>
                 </div>
+                <a class="btn-weather-page" href="/weather.html">🌤️ 전국 날씨 한눈에 보기</a>
             </div>
 
             <div id="weather-card" class="weather-card"></div>

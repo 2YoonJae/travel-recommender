@@ -1,0 +1,5 @@
+SHELL=/bin/sh
+PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
+# 기상청 발표 시각(+15분)에 전국 날씨 HTML 생성/갱신.
+# 단기예보 02·05·08·11·14·17·20·23시 / 중기예보 06·18시 (컨테이너 TZ=Asia/Seoul)
+15 2,5,6,8,11,14,17,18,20,23 * * * root /usr/local/bin/python /app/generate_weather_html.py >> /var/log/cron.log 2>&1

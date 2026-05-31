@@ -6,3 +6,6 @@ __pycache__/
 
 .DS_Store
 Thumbs.db
+
+# cron 런타임 생성물 (컨테이너 기동 시 자동 생성)
+frontend/weather.html
