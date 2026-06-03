@@ -79,7 +79,7 @@ MID_TA_CODES = {
 
 
 def get_forecast_base():
-    now = datetime.now()
+    now = get_kst_now()
     hours = [2, 5, 8, 11, 14, 17, 20, 23]
     base_hour = None
     for h in hours:

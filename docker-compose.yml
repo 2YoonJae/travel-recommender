@@ -5,6 +5,12 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/regions', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 5
+      start_period: 15s
 
   # cron 데몬: 발표 시각마다 전국 날씨 HTML(weather.html)을 생성/갱신
   cron:
@@ -15,7 +21,8 @@ services:
     volumes:
       - ./frontend:/output          # nginx가 서빙하는 폴더에 HTML 기록
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   nginx:

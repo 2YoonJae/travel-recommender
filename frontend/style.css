@@ -434,9 +434,11 @@ body {
 /* 오늘 — 다른 날보다 강조 */
 .weather-day.today {
     flex: 1.3 1 0;
-    background: rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.22);
     border-radius: 14px;
     border-right: none;
+    margin: 4px 6px;
+    padding: 6px 4px;
 }
 
 .weather-day.today + .weather-day { border-left: 1px solid rgba(255, 255, 255, 0.12); }
@@ -449,9 +451,9 @@ body {
 
 /* 현재 온도 (오늘만) */
 .weather-day-current {
-    font-size: 26px;
-    font-weight: 900;
-    line-height: 1;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.3;
     color: #fff;
     margin-bottom: 4px;
 }
@@ -525,7 +527,7 @@ body {
     .weather-day.today .weather-day-icon { font-size: 32px; }
     .weather-day.today .temp-max,
     .weather-day.today .temp-min { font-size: 16px; }
-    .weather-day-current { font-size: 22px; }
+    .weather-day-current { font-size: 12px; }
 }
 
 /* ─── Section Title ─── */

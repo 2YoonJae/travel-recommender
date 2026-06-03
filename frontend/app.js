@@ -218,13 +218,14 @@ function renderResults(weather, data) {
             <div class="weather-days">
                 ${weather.days.map((day, i) => {
                     const isToday = i === 0 || day.label === "오늘";
+                    const isSelected = day.date && day.date === state.date;
                     return `
-                    <div class="weather-day${isToday ? " today" : ""}">
+                    <div class="weather-day${isSelected ? " today" : ""}">
                         <div class="weather-day-label">${day.label}</div>
                         <div class="weather-day-icon">${day.icon}</div>
                         <div class="weather-day-name">${day.weather}</div>
                         ${isToday && day.temp_current != null
-                            ? `<div class="weather-day-current">${day.temp_current}°</div>`
+                            ? `<div class="weather-day-current">현재온도 : ${day.temp_current}°</div>`
                             : ""}
                         <div class="weather-day-temp">
                             <span class="temp-max">${day.temp_max}°</span>
