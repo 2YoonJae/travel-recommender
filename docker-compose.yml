@@ -26,12 +26,11 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:alpine
+    build: ./nginx
     ports:
-      - "80:80"
+      - "2735:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
     restart: unless-stopped

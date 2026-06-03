@@ -11,7 +11,7 @@ const CONTENT_ICONS = {
 
 const QUESTIONS = [
     {
-        text: "어떤 분위기의 여행지를 원하나요?",
+        text: "어떤 여행지를 찾으세요?",
         options: [
             { value: "mountain", icon: "🏔️", label: "산·숲·계곡",    desc: "트레킹, 계곡, 청정 자연" },
             { value: "sea",      icon: "🌊", label: "바다·해변",      desc: "해수욕, 일몰, 해안 드라이브" },
@@ -20,7 +20,7 @@ const QUESTIONS = [
         ]
     },
     {
-        text: "여행에서 가장 하고 싶은 것은?",
+        text: "여행에서 무엇을 하고 싶나요?",
         options: [
             { value: "activity", icon: "🏄", label: "액티비티·스포츠", desc: "서핑, 래프팅, 클라이밍" },
             { value: "food",     icon: "🍽️", label: "미식·맛집 탐방",  desc: "로컬 맛집, 특산 음식" },
@@ -29,11 +29,12 @@ const QUESTIONS = [
         ]
     },
     {
-        text: "원하는 여행 분위기는?",
+        text: "어떤 날씨를 원하나요?",
         options: [
             { value: "rainy",  icon: "🌧️", label: "비 오는 날의 낭만",   desc: "촉촉한 감성, 빗소리, 실내 명소" },
             { value: "sunny",  icon: "☀️", label: "햇빛 쨍쨍 맑은 날",   desc: "파란 하늘, 야외 활동, 산책" },
-            { value: "cloudy", icon: "☁️", label: "구름 많고 흐린 날",   desc: "선선한 공기, 부담 없는 나들이" }
+            { value: "cloudy", icon: "☁️", label: "구름 많고 흐린 날",   desc: "선선한 공기, 부담 없는 나들이" },
+            { value: "snowy",  icon: "❄️", label: "눈 내리는 겨울날",     desc: "설경, 포근한 실내, 겨울 감성" }
         ]
     }
 ];
@@ -91,17 +92,38 @@ function showStep(id) {
 async function handleStep1() {
     const region = document.getElementById("region-select").value;
     const dateVal = document.getElementById("date-input").value;
+    const regionSel = document.getElementById("region-select");
+    const regionError = document.getElementById("region-error");
+    const dateInputEl = document.getElementById("date-input");
+    const dateErrorEl = document.getElementById("date-error");
 
-    if (!region) return showToast("여행지를 선택해주세요.");
-    if (!dateVal) return showToast("날짜를 선택해주세요.");
+    // 에러 초기화
+    regionError.style.display = "none";
+    regionSel.style.borderColor = "";
+    dateErrorEl.style.display = "none";
+    dateInputEl.style.borderColor = "";
+
+    let invalid = false;
+    if (!region) {
+        regionError.textContent = "⚠️ 여행지를 선택해주세요.";
+        regionError.style.display = "block";
+        regionSel.style.borderColor = "#EF4444";
+        invalid = true;
+    }
+    if (!dateVal) {
+        dateErrorEl.textContent = "⚠️ 여행 날짜를 선택해주세요.";
+        dateErrorEl.style.display = "block";
+        dateInputEl.style.borderColor = "#EF4444";
+        invalid = true;
+    }
+    if (invalid) return;
 
     const maxDate = getLocalDateString(6);
     if (dateVal > maxDate) {
-        const dateError = document.getElementById("date-error");
-        const dateInput = document.getElementById("date-input");
-        dateError.style.display = "block";
-        dateInput.style.borderColor = "#EF4444";
-        dateInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        dateErrorEl.textContent = "⚠️ 오늘부터 일주일 이내 날짜만 선택할 수 있어요.";
+        dateErrorEl.style.display = "block";
+        dateInputEl.style.borderColor = "#EF4444";
+        dateInputEl.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
     }
     document.getElementById("date-error").style.display = "none";
@@ -149,7 +171,9 @@ function showQuestion(index) {
         </div>
     `).join("");
 
-    document.getElementById("back-btn").style.display = index === 0 ? "none" : "block";
+    const backBtn = document.getElementById("back-btn");
+    backBtn.style.display = "block";
+    backBtn.textContent = index === 0 ? "🏠 홈 화면으로 돌아가기" : "← 이전 질문으로 돌아가기";
 
     showStep("step-questions");
 }
@@ -213,20 +237,18 @@ function renderResults(weather, data) {
     // Weather
     const weatherEl = document.getElementById("weather-card");
     if (weather && weather.days && weather.days.length) {
+        const cur = weather.days[0] && weather.days[0].temp_current;
+        const headerExtra = (cur != null) ? ` · 현재 ${cur}°` : "";
         weatherEl.innerHTML = `
-            <div class="weather-header">${weather.region} 날씨</div>
+            <div class="weather-header">${weather.region} 날씨${headerExtra}</div>
             <div class="weather-days">
                 ${weather.days.map((day, i) => {
-                    const isToday = i === 0 || day.label === "오늘";
                     const isSelected = day.date && day.date === state.date;
                     return `
                     <div class="weather-day${isSelected ? " today" : ""}">
                         <div class="weather-day-label">${day.label}</div>
                         <div class="weather-day-icon">${day.icon}</div>
                         <div class="weather-day-name">${day.weather}</div>
-                        ${isToday && day.temp_current != null
-                            ? `<div class="weather-day-current">현재온도 : ${day.temp_current}°</div>`
-                            : ""}
                         <div class="weather-day-temp">
                             <span class="temp-max">${day.temp_max}°</span>
                             <span class="temp-divider">/</span>
@@ -263,10 +285,13 @@ function renderResults(weather, data) {
         noteEl.style.display = "none";
     }
 
+    const footer = document.getElementById("results-footer");
+    if (footer) footer.style.display = data.mood_available === false ? "none" : "";
+
     if (data.mood_available === false) {
         placesEl.innerHTML = `
             <div class="no-results">
-                다른 분위기를 골라보세요. 😢<br>
+                다른 여행지나 다른 날씨를 골라보세요. 😢<br>
                 <button onclick="restart()"
                     style="margin-top:16px;padding:10px 18px;background:#4F46E5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
                     🏠 처음으로 돌아가기</button>

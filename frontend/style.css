@@ -380,6 +380,12 @@ body {
 
 .btn-restart:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
 
+.results-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
 .results-title {
     font-size: clamp(1.4rem, 3vw, 2rem);
     font-weight: 900;
@@ -425,44 +431,34 @@ body {
     flex: 1 1 0;
     min-width: 0;
     text-align: center;
-    padding: 6px 6px;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
     border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .weather-day:last-child { border-right: none; }
 
-/* 오늘 — 다른 날보다 강조 */
+/* 선택한 날 — 배경 강조, 구분선과 겹치지 않게 살짝 축소 */
 .weather-day.today {
-    flex: 1.3 1 0;
     background: rgba(255, 255, 255, 0.22);
     border-radius: 14px;
     border-right: none;
     margin: 4px 6px;
-    padding: 6px 4px;
+    padding: 6px 2px;
 }
 
 .weather-day.today + .weather-day { border-left: 1px solid rgba(255, 255, 255, 0.12); }
 
 .weather-day.today .weather-day-label { color: #FDE68A; }
-.weather-day.today .weather-day-icon { font-size: 40px; }
-.weather-day.today .weather-day-name { font-size: 14px; }
-.weather-day.today .temp-max,
-.weather-day.today .temp-min { font-size: 22px; }
-
-/* 현재 온도 (오늘만) */
-.weather-day-current {
-    font-size: 13px;
-    font-weight: 800;
-    line-height: 1.3;
-    color: #fff;
-    margin-bottom: 4px;
-}
 
 .weather-day-label {
     font-size: 12px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.55);
-    margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.8px;
 }
@@ -470,13 +466,17 @@ body {
 .weather-day-icon {
     font-size: 32px;
     line-height: 1;
-    margin-bottom: 4px;
+    height: 36px;
+    display: flex;
+    align-items: center;
 }
 
 .weather-day-name {
     font-size: 13px;
     color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 6px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
 }
 
 .weather-day-temp {
@@ -484,7 +484,6 @@ body {
     align-items: baseline;
     justify-content: center;
     gap: 4px;
-    margin-bottom: 4px;
 }
 
 .temp-max {
@@ -518,16 +517,12 @@ body {
 }
 
 @media (max-width: 600px) {
-    .weather-day { padding: 6px 3px; }
-    .weather-day-icon { font-size: 24px; }
+    .weather-day { padding: 8px 3px; }
+    .weather-day-icon { font-size: 24px; height: 28px; }
     .temp-max, .temp-min { font-size: 13px; }
     .weather-day-label { font-size: 10px; letter-spacing: 0.3px; }
     .weather-day-name { font-size: 11px; }
     .weather-day-pop { font-size: 10px; }
-    .weather-day.today .weather-day-icon { font-size: 32px; }
-    .weather-day.today .temp-max,
-    .weather-day.today .temp-min { font-size: 16px; }
-    .weather-day-current { font-size: 12px; }
 }
 
 /* ─── Section Title ─── */
@@ -715,7 +710,6 @@ body {
     height: 260px;
     object-fit: cover;
     display: block;
-    border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .modal-placeholder {
@@ -726,7 +720,6 @@ body {
     justify-content: center;
     font-size: 72px;
     background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
-    border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .modal-content { padding: 24px 28px 32px; }

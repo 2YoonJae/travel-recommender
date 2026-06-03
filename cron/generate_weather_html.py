@@ -44,17 +44,16 @@ def esc(s):
 def render_region_card(data):
     region = esc(data.get("region", ""))
     days = data.get("days", [])
+    cur = days[0].get("temp_current") if days else None
+    cur_html = f' · 현재 {esc(cur)}°' if cur is not None else ""
     cells = []
     for i, d in enumerate(days):
         today = (i == 0)
-        cur = d.get("temp_current")
-        cur_html = f'<div class="cur">{esc(cur)}°</div>' if (today and cur is not None) else ""
         cells.append(f"""
             <div class="day{' today' if today else ''}">
                 <div class="lbl">{esc(d.get('label'))}</div>
                 <div class="ico">{esc(d.get('icon'))}</div>
                 <div class="wx">{esc(d.get('weather'))}</div>
-                {cur_html}
                 <div class="tmp"><span class="mx">{esc(d.get('temp_max'))}°</span>
                     <span class="dv">/</span>
                     <span class="mn">{esc(d.get('temp_min'))}°</span></div>
@@ -62,7 +61,7 @@ def render_region_card(data):
             </div>""")
     return f"""
         <section class="card">
-            <h2>{region}</h2>
+            <h2>{region}<span class="cur">{cur_html}</span></h2>
             <div class="days">{''.join(cells)}</div>
         </section>"""
 
@@ -91,20 +90,24 @@ def render(all_data, now):
           border-radius: 18px; padding: 16px 18px;
           box-shadow: 0 12px 32px rgba(3,105,161,.3); }}
   .card h2 {{ font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 12px; }}
+  .card h2 .cur {{ font-size: 13px; font-weight: 700; color: rgba(255,255,255,.7); }}
   .days {{ display: flex; }}
-  .day {{ flex: 1 1 0; min-width: 0; text-align: center; padding: 4px 2px;
+  .day {{ flex: 1 1 0; min-width: 0; text-align: center; padding: 8px 2px;
+         display: flex; flex-direction: column; align-items: center;
+         justify-content: flex-start; gap: 4px;
          border-right: 1px solid rgba(255,255,255,.12); }}
   .day:last-child {{ border-right: none; }}
-  .day.today {{ flex: 1.3 1 0; background: rgba(255,255,255,.10);
-               border-radius: 12px; border-right: none; }}
+  .day.today {{ background: rgba(255,255,255,.10);
+               border-radius: 12px; border-right: none;
+               margin: 4px 5px; padding: 8px 1px; }}
   .day.today + .day {{ border-left: 1px solid rgba(255,255,255,.12); }}
   .lbl {{ font-size: 10px; font-weight: 700; color: rgba(255,255,255,.55);
-         margin-bottom: 4px; text-transform: uppercase; }}
+         text-transform: uppercase; }}
   .day.today .lbl {{ color: #FDE68A; }}
-  .ico {{ font-size: 22px; line-height: 1; margin-bottom: 3px; }}
-  .day.today .ico {{ font-size: 28px; }}
-  .wx {{ font-size: 10px; color: rgba(255,255,255,.8); margin-bottom: 4px; }}
-  .cur {{ font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 3px; }}
+  .ico {{ font-size: 22px; line-height: 1; height: 26px;
+         display: flex; align-items: center; }}
+  .wx {{ font-size: 10px; color: rgba(255,255,255,.8);
+        min-height: 14px; display: flex; align-items: center; }}
   .tmp {{ font-size: 12px; }}
   .mx {{ color: #FCA5A5; font-weight: 800; }}
   .mn {{ color: #BAE6FD; font-weight: 800; }}
@@ -115,7 +118,7 @@ def render(all_data, now):
 <body>
   <div class="head">
     <h1>🌤️ 전국 날씨 요약</h1>
-    <div class="meta">마지막 갱신: <b>{ts} KST</b> · cron 자동 생성 ·
+    <div class="meta">마지막 갱신: <b>{ts} KST</b> ·
       <a href="/index.html">여행지 추천하러 가기 →</a></div>
   </div>
   <div class="grid">{cards}</div>

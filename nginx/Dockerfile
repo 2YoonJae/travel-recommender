@@ -1,3 +1,7 @@
+FROM nginx:alpine
+
+# nginx 설정을 Dockerfile에 직접 내장 (별도 .conf 파일 불필요)
+COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
     listen 80;
     server_name localhost;
@@ -16,3 +20,4 @@ server {
         proxy_read_timeout 30s;
     }
 }
+EOF

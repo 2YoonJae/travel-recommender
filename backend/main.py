@@ -277,8 +277,10 @@ async def fetch_weather_days(region: str):
         elif cat in ("SKY", "PTY", "TMP", "POP"):
             by_date[fd]["times"].setdefault(t, {})[cat] = val
 
-    short_day_labels = ["오늘", "내일", "모레",
-                        f"{(today + timedelta(days=3)).month}/{(today + timedelta(days=3)).day}"]
+    short_day_labels = ["오늘"] + [
+        f"{(today + timedelta(days=i)).month}/{(today + timedelta(days=i)).day}"
+        for i in range(1, 4)
+    ]
     days = []
     for i, d in enumerate(short_dates):
         entry = by_date[d]
@@ -358,7 +360,7 @@ async def fetch_weather_days(region: str):
     # tmFc 기준일 계산 (YYYYMMDD0600 or YYYYMMDD1800)
     tmFc_date = datetime.strptime(tmFc[:8], "%Y%m%d").replace(hour=0, minute=0, second=0, microsecond=0)
 
-    for offset in range(4, 8):
+    for offset in range(4, 7):
         _d = today + timedelta(days=offset)
         d = _d.strftime("%Y%m%d")
         label = f"{_d.month}/{_d.day}"
@@ -475,20 +477,23 @@ MOOD_LABELS = {
     "rainy": "비 오는 날의 낭만",
     "sunny": "햇빛 쨍쨍한 맑은 날",
     "cloudy": "구름 많고 흐린 날",
+    "snowy": "눈 내리는 겨울날",
 }
-WEATHER_LABELS = {"rain": "비/눈", "sunny": "맑음", "cloudy": "흐림"}
-MOOD_TO_CAT = {"rainy": "rain", "sunny": "sunny", "cloudy": "cloudy"}
+WEATHER_LABELS = {"rain": "비", "snow": "눈", "sunny": "맑음", "cloudy": "흐림"}
+MOOD_TO_CAT = {"rainy": "rain", "sunny": "sunny", "cloudy": "cloudy", "snowy": "snow"}
 
 
 def classify_weather(day: dict) -> str:
-    """예보 1일치를 rain/sunny/cloudy 로 분류."""
+    """예보 1일치를 rain/snow/sunny/cloudy 로 분류."""
     w = str(day.get("weather", ""))
     pop = day.get("pop", 0) or 0
     try:
         pop = int(pop)
     except (TypeError, ValueError):
         pop = 0
-    if any(k in w for k in ("비", "눈", "소나기")) or pop >= 60:
+    if "눈" in w:
+        return "snow"
+    if any(k in w for k in ("비", "소나기")) or pop >= 60:
         return "rain"
     if "맑" in w:
         return "sunny"
@@ -501,7 +506,7 @@ def build_plan(answers: List[str], weather_cat: str):
     base = map_answers_to_content_types(answers)
 
     # 실제 날씨 → 실내/야외 선호
-    if weather_cat == "rain":
+    if weather_cat in ("rain", "snow"):
         prefer = "indoor"
     elif weather_cat == "sunny":
         prefer = "outdoor"
@@ -533,7 +538,7 @@ def mood_weather_note(mood: str, days: list, sel_date: str, sel_cat: str):
 
     if mood_cat == sel_cat:
         wlabel = WEATHER_LABELS.get(sel_cat, "")
-        return f"선택하신 '{mood_label}' 분위기와 그날 날씨({wlabel})가 일치해요!", sel_date
+        return f"원하신 '{mood_label}' 날씨, 그날 예보({wlabel})와 딱 맞아요!", sel_date
 
     # 불일치 → 예보 범위에서 분위기와 맞는 모든 날짜 수집 (날짜순)
     matches = []  # [(datetime, 'YYYYMMDD'), ...]
@@ -553,10 +558,10 @@ def mood_weather_note(mood: str, days: list, sel_date: str, sel_cat: str):
     if matches:
         matches.sort(key=lambda x: x[0])
         date_str = ", ".join(f"{dt.month}월 {dt.day}일" for dt, _ in matches)
-        return (f"선택한 날짜는 '{mood_label}' 분위기와 일치하지 않아요. "
-                f"대신 이런 날이 잘 맞아요 → {date_str}"), matches[0][1]
+        return (f"선택한 날짜는 '{mood_label}' 날씨가 아니에요. "
+                f"대신 이런 날이 잘 어울려요 → {date_str}"), matches[0][1]
 
-    return (f"예보 기간(7일) 내에 '{mood_label}' 분위기에 맞는 날씨가 없어요."), None
+    return (f"예보 기간(7일) 안에는 '{mood_label}' 날씨인 날이 없어요."), None
 
 
 async def fetch_festivals(client, area_code: int, trip_date: str) -> list:
