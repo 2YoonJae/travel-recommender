@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전국 날씨 요약</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+         background: #0F172A; color: #E2E8F0; padding: 32px 20px 64px; }
+  .head { max-width: 1100px; margin: 0 auto 28px; }
+  .head h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  .head .meta { margin-top: 8px; font-size: 13px; color: #94A3B8; }
+  .head .meta b { color: #FDE68A; }
+  .head a { color: #818CF8; text-decoration: none; font-size: 13px; }
+  .grid { max-width: 1100px; margin: 0 auto;
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card { background: linear-gradient(135deg, #1E3A8A 0%, #0369A1 100%);
+          border-radius: 18px; padding: 16px 18px;
+          box-shadow: 0 12px 32px rgba(3,105,161,.3); }
+  .card h2 { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 12px; }
+  .card h2 .cur { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.7); }
+  .days { display: flex; }
+  .day { flex: 1 1 0; min-width: 0; text-align: center; padding: 8px 2px;
+         display: flex; flex-direction: column; align-items: center;
+         justify-content: flex-start; gap: 4px;
+         border-right: 1px solid rgba(255,255,255,.12); }
+  .day:last-child { border-right: none; }
+  .day.today { background: rgba(255,255,255,.10);
+               border-radius: 12px; border-right: none;
+               margin: 4px 5px; padding: 8px 1px; }
+  .day.today + .day { border-left: 1px solid rgba(255,255,255,.12); }
+  .lbl { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.55);
+         text-transform: uppercase; }
+  .day.today .lbl { color: #FDE68A; }
+  .ico { font-size: 22px; line-height: 1; height: 26px;
+         display: flex; align-items: center; }
+  .wx { font-size: 10px; color: rgba(255,255,255,.8);
+        min-height: 14px; display: flex; align-items: center; }
+  .tmp { font-size: 12px; }
+  .mx { color: #FCA5A5; font-weight: 800; }
+  .mn { color: #BAE6FD; font-weight: 800; }
+  .dv { color: rgba(255,255,255,.35); }
+  .pop { font-size: 10px; color: rgba(255,255,255,.6); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>🌤️ 전국 날씨 요약</h1>
+    <div class="meta">마지막 갱신: <b>2026-06-03 20:39 KST</b> ·
+      <a href="/index.html">여행지 추천하러 가기 →</a></div>
+  </div>
+  <div class="grid">
+        <section class="card">
+            <h2>서울<span class="cur"> · 현재 28°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">24°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">🌦️</div>
+                <div class="wx">소나기</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">21.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>인천<span class="cur"> · 현재 26°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">🌦️</div>
+                <div class="wx">소나기</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">25.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>대전<span class="cur"> · 현재 28°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>대구<span class="cur"> · 현재 27°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">🌦️</div>
+                <div class="wx">소나기</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">29.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>광주<span class="cur"> · 현재 27°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>부산<span class="cur"> · 현재 24°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">21°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">25.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">29.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>울산<span class="cur"> · 현재 23°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">23°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">20°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">25.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">29.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>세종<span class="cur"> · 현재 27°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">23°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 70%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>경기도<span class="cur"> · 현재 27°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">🌦️</div>
+                <div class="wx">소나기</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 70%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>강원도<span class="cur"> · 현재 30°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">30°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">🌦️</div>
+                <div class="wx">소나기</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 80%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">13.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>충청북도<span class="cur"> · 현재 29°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">29°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">23°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">29.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 70%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>충청남도<span class="cur"> · 현재 29°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">29°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">13.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>경상북도<span class="cur"> · 현재 28°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">28°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">21°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">12.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">23°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>경상남도<span class="cur"> · 현재 25°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">22°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">29.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>전라북도<span class="cur"> · 현재 27°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">🌦️</div>
+                <div class="wx">소나기</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">23°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">29.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">20.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">28.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">15.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">29°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">27°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>전라남도<span class="cur"> · 현재 25°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">21°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">27.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">14.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">26°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">16°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section>
+        <section class="card">
+            <h2>제주도<span class="cur"> · 현재 23°</span></h2>
+            <div class="days">
+            <div class="day today">
+                <div class="lbl">오늘</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">23°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">21°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/4</div>
+                <div class="ico">🌧️</div>
+                <div class="wx">비</div>
+                <div class="tmp"><span class="mx">25.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19.0°</span></div>
+                <div class="pop">☔ 60%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/5</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">23.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/6</div>
+                <div class="ico">☁️</div>
+                <div class="wx">흐림</div>
+                <div class="tmp"><span class="mx">24.0°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17.0°</span></div>
+                <div class="pop">☔ 30%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/7</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">25°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">19°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/8</div>
+                <div class="ico">⛅</div>
+                <div class="wx">구름많음</div>
+                <div class="tmp"><span class="mx">24°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">18°</span></div>
+                <div class="pop">☔ 20%</div>
+            </div>
+            <div class="day">
+                <div class="lbl">6/9</div>
+                <div class="ico">☀️</div>
+                <div class="wx">맑음</div>
+                <div class="tmp"><span class="mx">23°</span>
+                    <span class="dv">/</span>
+                    <span class="mn">17°</span></div>
+                <div class="pop">☔ 10%</div>
+            </div></div>
+        </section></div>
+</body>
+</html>
