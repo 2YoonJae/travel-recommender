@@ -315,6 +315,11 @@ async def fetch_weather_days(region: str):
 
     # ── 중기예보 (D+3 ~ D+9) ─────────────────────────────────────────
     tmFc = get_mid_forecast_base()
+    # tmFc 기준일 계산 (YYYYMMDD0600 or YYYYMMDD1800)
+    tmFc_date = datetime.strptime(tmFc[:8], "%Y%m%d").replace(hour=0, minute=0, second=0, microsecond=0)
+    # 18시 발표분은 D+4 인덱스(taMax4/wf4 등)를 주지 않음 → 같은 날 06시 발표분으로 보충
+    fallback_tmFc = tmFc[:8] + "0600"
+    needed_ms = [(today + timedelta(days=o) - tmFc_date).days for o in range(4, 7)]
     land_code = MID_LAND_CODES.get(region)
     ta_code = MID_TA_CODES.get(region)
 
@@ -329,36 +334,41 @@ async def fetch_weather_days(region: str):
             return item
         return None
 
+    async def fetch_mid_pair(client, tmfc):
+        lr, tr = await asyncio.gather(
+            client.get(
+                "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst",
+                params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
+                        "dataType": "JSON", "regId": land_code, "tmFc": tmfc},
+                timeout=15
+            ),
+            client.get(
+                "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa",
+                params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
+                        "dataType": "JSON", "regId": ta_code, "tmFc": tmfc},
+                timeout=15
+            ),
+        )
+        return extract_mid_item(lr.json()), extract_mid_item(tr.json())
+
     mid_land, mid_ta = None, None
     if land_code and ta_code:
         async with httpx.AsyncClient() as mid_client:
             try:
-                lr, tr = await asyncio.gather(
-                    mid_client.get(
-                        "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst",
-                        params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
-                                "dataType": "JSON", "regId": land_code, "tmFc": tmFc},
-                        timeout=15
-                    ),
-                    mid_client.get(
-                        "http://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa",
-                        params={"serviceKey": WEATHER_API_KEY, "pageNo": 1, "numOfRows": 10,
-                                "dataType": "JSON", "regId": ta_code, "tmFc": tmFc},
-                        timeout=15
-                    ),
-                )
-                land_data, ta_data = lr.json(), tr.json()
-                logging.info("중기육상 raw=%s", str(land_data)[:300])
-                logging.info("중기기온 raw=%s", str(ta_data)[:300])
-                mid_land = extract_mid_item(land_data)
-                mid_ta = extract_mid_item(ta_data)
+                mid_land, mid_ta = await fetch_mid_pair(mid_client, tmFc)
+                # 필요한 D+N 인덱스가 발표분에 없으면(주로 18시 발표의 D+4) 06시 발표분으로 보충
+                if fallback_tmFc != tmFc and mid_ta and \
+                        any(f"taMax{m}" not in mid_ta for m in needed_ms):
+                    logging.info("중기 발표분 D+4 누락 → 06시(%s) 보충", fallback_tmFc)
+                    fb_land, fb_ta = await fetch_mid_pair(mid_client, fallback_tmFc)
+                    if fb_ta:
+                        mid_ta = {**fb_ta, **mid_ta}          # 최신(18시) 우선, 누락분만 06시에서 채움
+                    if fb_land:
+                        mid_land = {**fb_land, **(mid_land or {})}
                 logging.info("mid_land keys=%s", list(mid_land.keys())[:8] if mid_land else None)
                 logging.info("mid_ta keys=%s", list(mid_ta.keys())[:8] if mid_ta else None)
             except Exception as e:
                 logging.error("중기예보 API 예외: %s", e)
-
-    # tmFc 기준일 계산 (YYYYMMDD0600 or YYYYMMDD1800)
-    tmFc_date = datetime.strptime(tmFc[:8], "%Y%m%d").replace(hour=0, minute=0, second=0, microsecond=0)
 
     for offset in range(4, 7):
         _d = today + timedelta(days=offset)
@@ -367,7 +377,7 @@ async def fetch_weather_days(region: str):
         # tmFc 기준일로부터 며칠 뒤인지 계산
         m = ((_d - tmFc_date).days)
 
-        if mid_land and mid_ta and 3 <= m <= 10:
+        if mid_land and mid_ta and 4 <= m <= 10:
             wf_am = mid_land.get(f"wf{m}Am", "") or mid_land.get(f"wf{m}", "")
             wf_pm = mid_land.get(f"wf{m}Pm", "") or wf_am
             wf = wf_pm or wf_am or "맑음"
@@ -393,13 +403,13 @@ async def fetch_weather_days(region: str):
     return days
 
 
-# ── 날씨 캐시 (cron 사전 캐싱) ────────────────────────────────────────
+# ── 날씨 캐시 (사전 캐싱) ────────────────────────────────────────
 # 기상청 단기예보 발표: 02·05·08·11·14·17·20·23시 / 중기예보: 06·18시.
-# cron으로 발표 직후(+15분) 전 지역을 미리 받아 캐시에 저장 → 사용자 요청은
+# Crontrigger로 발표 직후(+15분) 전 지역을 미리 받아 캐시에 저장 → 사용자 요청은
 # 외부 API 대신 캐시를 읽음(트래픽·한도 절감, 응답 속도↑, 외부 장애 내성).
 KST = timezone(timedelta(hours=9))
 WEATHER_CACHE: dict = {}                 # {region: {"days": [...], "ts": datetime}}
-CACHE_TTL = timedelta(hours=6)           # cron 실패 대비 안전망(발표 간격 3h보다 여유)
+CACHE_TTL = timedelta(hours=6)           # 캐시 실패 대비 안전망(발표 간격 3h보다 여유)
 
 scheduler = AsyncIOScheduler(timezone=KST)
 
